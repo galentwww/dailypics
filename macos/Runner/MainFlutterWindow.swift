@@ -24,6 +24,8 @@ class MainFlutterWindow: NSWindow {
                 self.isAlbumAuthorized(result: result)
             case "openAppSettings":
                 self.openAppSettings(result: result)
+            case "getTemporaryDirectory":
+                self.getTemporaryDirectory(result: result)
             case "syncAlbum":
                 let arguments = call.arguments as! Dictionary<String, String>;
                 self.syncAlbum(file: arguments["file"]!, result: result)
@@ -55,8 +57,8 @@ class MainFlutterWindow: NSWindow {
     }
 
     private func isAlbumAuthorized(result: FlutterResult) {
-        /*let manager = FileManager.default
-        let url: URL = manager.urls(for: .picturesDirectory, in: .userDomainMask)[0]
+        /*let fileManager = FileManager.default
+        let url: URL = fileManager.urls(for: .picturesDirectory, in: .userDomainMask)[0]
         result(manager.isWritableFile(atPath: url.path))*/
         result(true)
     }
@@ -65,13 +67,18 @@ class MainFlutterWindow: NSWindow {
         result(FlutterMethodNotImplemented)
     }
 
+    private func getTemporaryDirectory(result: FlutterResult) {
+        let fileManager = FileManager.default
+        result(fileManager.urls(for: .cachesDirectory, in: .userDomainMask)[0])
+    }
+
     private func syncAlbum(file: String, result: FlutterResult) {
-        /*let manager = FileManager.default
-        let path: URL = manager.urls(for: .picturesDirectory, in: .userDomainMask)[0]
+        /*let fileManager = FileManager.default
+        let path: URL = fileManager.urls(for: .picturesDirectory, in: .userDomainMask)[0]
         let srcUrl = URL.init(fileURLWithPath: file)
         let dstUrl = path.appendingPathComponent(srcUrl.lastPathComponent)
         do {
-            try manager.moveItem(at: srcUrl, to: dstUrl)
+            try fileManager.moveItem(at: srcUrl, to: dstUrl)
             result(nil)
         } catch let error {
             result(FlutterError(code: "0", message: error.localizedDescription, details: nil))
