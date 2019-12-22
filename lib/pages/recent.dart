@@ -147,10 +147,10 @@ class _RecentPageState extends State<RecentPage>
       size: 20,
     );
     List<Picture> data = recents.data;
-    List<String> list = Settings.marked;
+    /*List<String> list = Settings.marked;
     for (int i = 0; i < data.length; i++) {
       data[i].marked = list.contains(data[i].id);
-    }
+    }*/
     max[current] = recents.maximum;
     doing = false;
     AppModel.of(context).recent.addAll(data);
