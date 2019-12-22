@@ -29,9 +29,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' show CircularProgressIndicator, Colors, Divider;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-// import 'package:flutter_ionicons/flutter_ionicons.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:path_provider/path_provider.dart';
 
 const double _kBackGestureWidth = 20.0;
 const double _kMinFlingVelocity = 1.0; // Screen widths per second.
@@ -422,7 +420,7 @@ class _DetailsPageState extends State<DetailsPage> {
     ui.Image image = await render.toImage(pixelRatio: pixelRatio);
     ByteData byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     Uint8List bytes = byteData.buffer.asUint8List();
-    String temp = (await getTemporaryDirectory()).path;
+    String temp = await SystemUtils.getTemporaryDirectory();
     File file = File('$temp/${DateTime.now().millisecondsSinceEpoch}.png');
     file.writeAsBytesSync(bytes);
 

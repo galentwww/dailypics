@@ -18,7 +18,6 @@ import 'dart:ui';
 import 'package:dailypics/misc/bean.dart';
 import 'package:dailypics/model/app.dart';
 import 'package:dailypics/utils/api.dart';
-// import 'package:dailypics/utils/utils.dart';
 import 'package:dailypics/widget/slivers.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
@@ -115,7 +114,7 @@ class _TodayComponentState extends State<TodayComponent> with AutomaticKeepAlive
                   'Today',
                   style: TextStyle(
                     fontSize: 34,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const Offstage(
