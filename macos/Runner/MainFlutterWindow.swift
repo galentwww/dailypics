@@ -24,6 +24,8 @@ class MainFlutterWindow: NSWindow {
                 self.isAlbumAuthorized(result: result)
             case "openAppSettings":
                 self.openAppSettings(result: result)
+            case "openUrl":
+                self.openUrl(url: call.arguments as! String, result: result)
             case "getTemporaryDirectory":
                 self.getTemporaryDirectory(result: result)
             case "syncAlbum":
@@ -44,11 +46,7 @@ class MainFlutterWindow: NSWindow {
     }
 
     private func useAsWallpaper(file: String, result: FlutterResult) {
-        let task = Process()
-        task.launchPath = "osascript"
-        task.arguments = ["-e", "tell application \"Finder\" to set desktop picture to POSIX file \"\(file)\""]
-        task.launch()
-        result(nil)
+        result(FlutterMethodNotImplemented)
     }
 
     private func requestReview(inApp: Bool, result: FlutterResult) {
@@ -57,23 +55,26 @@ class MainFlutterWindow: NSWindow {
     }
 
     private func isAlbumAuthorized(result: FlutterResult) {
-        /*let fileManager = FileManager.default
+        let fileManager = FileManager.default
         let url: URL = fileManager.urls(for: .picturesDirectory, in: .userDomainMask)[0]
-        result(manager.isWritableFile(atPath: url.path))*/
-        result(true)
+        result(fileManager.isWritableFile(atPath: url.path))
     }
 
     private func openAppSettings(result: FlutterResult) {
         result(FlutterMethodNotImplemented)
     }
 
+    private func openUrl(url: String, result: FlutterResult) {
+        result(NSWorkspace.shared.open(URL.init(string: url)!))
+    }
+
     private func getTemporaryDirectory(result: FlutterResult) {
         let fileManager = FileManager.default
-        result(fileManager.urls(for: .cachesDirectory, in: .userDomainMask)[0])
+        result(fileManager.urls(for: .cachesDirectory, in: .userDomainMask)[0].path)
     }
 
     private func syncAlbum(file: String, result: FlutterResult) {
-        /*let fileManager = FileManager.default
+        let fileManager = FileManager.default
         let path: URL = fileManager.urls(for: .picturesDirectory, in: .userDomainMask)[0]
         let srcUrl = URL.init(fileURLWithPath: file)
         let dstUrl = path.appendingPathComponent(srcUrl.lastPathComponent)
@@ -82,7 +83,6 @@ class MainFlutterWindow: NSWindow {
             result(nil)
         } catch let error {
             result(FlutterError(code: "0", message: error.localizedDescription, details: nil))
-        }*/
-        result(nil)
+        }
     }
 }
