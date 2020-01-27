@@ -21,6 +21,7 @@ import 'package:dailypics/misc/bean.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const MethodChannel _channel = MethodChannel('ml.cerasus.pics');
@@ -181,7 +182,7 @@ class Utils {
   }
 }
 
-/*class Settings {
+class Settings {
   static SharedPreferences _prefs;
 
   static Future<void> initialize() async {
@@ -191,4 +192,4 @@ class Utils {
   static List<String> get marked => _prefs.get('marked') ?? [];
 
   static set marked(List<String> list) => _prefs.setStringList('marked', list);
-}*/
+}

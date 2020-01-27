@@ -18,6 +18,7 @@ import 'dart:ui';
 import 'package:dailypics/misc/bean.dart';
 import 'package:dailypics/model/app.dart';
 import 'package:dailypics/utils/api.dart';
+import 'package:dailypics/utils/utils.dart';
 import 'package:dailypics/widget/slivers.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
@@ -140,10 +141,10 @@ class _TodayComponentState extends State<TodayComponent> with AutomaticKeepAlive
     _fetchText();
     List<Picture> data = await TujianApi.getToday();
     data.add(await _fetchBing());
-    /*List<String> list = Settings.marked;
+    List<String> list = Settings.marked;
     for (int i = 0; i < data.length; i++) {
       data[i].marked = list.contains(data[i].id);
-    }*/
+    }
     AppModel.of(context).today = data;
   }
 

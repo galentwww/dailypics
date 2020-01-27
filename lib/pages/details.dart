@@ -13,6 +13,7 @@
 // limitations under the License.
 
 // import 'dart:collection';
+import 'dart:collection';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -29,6 +30,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' show CircularProgressIndicator, Colors, Divider;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_ionicons/flutter_ionicons.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 const double _kBackGestureWidth = 20.0;
@@ -179,7 +181,7 @@ class _DetailsPageState extends State<DetailsPage> {
             ),
           ),
         ),
-        /*GestureDetector(
+        GestureDetector(
           onTap: _mark,
           child: Padding(
             padding: const EdgeInsets.only(left: 12),
@@ -189,7 +191,7 @@ class _DetailsPageState extends State<DetailsPage> {
               size: 22,
             ),
           ),
-        ),*/
+        ),
         Padding(
           padding: const EdgeInsets.only(left: 16),
           child: _SaveButton(data),
@@ -398,7 +400,7 @@ class _DetailsPageState extends State<DetailsPage> {
     return result;
   }
 
-  /*void _mark() async {
+  void _mark() async {
     if (widget.data != null) {
       widget.data.marked = !widget.data.marked;
     } else {
@@ -412,7 +414,7 @@ class _DetailsPageState extends State<DetailsPage> {
     }
     Settings.marked = hashSet.toList();
     setState(() {});
-  }*/
+  }
 
   void _share() async {
     double pixelRatio = ui.window.devicePixelRatio;
