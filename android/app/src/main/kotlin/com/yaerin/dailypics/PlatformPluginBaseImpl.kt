@@ -144,7 +144,7 @@ open class PlatformPluginBaseImpl(val context: Context) : PlatformPluginImpl {
         result.success(null)
     }
 
-    override fun isAlbumAuthorized(result: Result) {
+    override fun isAlbumAuthorized(result: Result?) {
         result.success(true)
     }
 
@@ -154,10 +154,6 @@ open class PlatformPluginBaseImpl(val context: Context) : PlatformPluginImpl {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         context.startActivity(intent)
         result.success(null)
-    }
-
-    override fun getTemporaryDirectory(result: Result) {
-        result.success(context.cacheDir.path)
     }
 
     @Suppress("DEPRECATION")
