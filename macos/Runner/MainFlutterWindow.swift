@@ -24,8 +24,6 @@ class MainFlutterWindow: NSWindow {
                 self.isAlbumAuthorized(result: result)
             case "openAppSettings":
                 self.openAppSettings(result: result)
-            case "openUrl":
-                self.openUrl(url: call.arguments as! String, result: result)
             case "getTemporaryDirectory":
                 self.getTemporaryDirectory(result: result)
             case "syncAlbum":
@@ -46,6 +44,10 @@ class MainFlutterWindow: NSWindow {
     }
 
     private func useAsWallpaper(file: String, result: FlutterResult) {
+        /*let task = Process()
+        task.launchPath = "osascript"
+        task.arguments = ["-e", "tell application \"Finder\" to set desktop picture to POSIX file \"\(file)\""]
+        task.launch()*/
         result(FlutterMethodNotImplemented)
     }
 
@@ -62,10 +64,6 @@ class MainFlutterWindow: NSWindow {
 
     private func openAppSettings(result: FlutterResult) {
         result(FlutterMethodNotImplemented)
-    }
-
-    private func openUrl(url: String, result: FlutterResult) {
-        result(NSWorkspace.shared.open(URL.init(string: url)!))
     }
 
     private func getTemporaryDirectory(result: FlutterResult) {

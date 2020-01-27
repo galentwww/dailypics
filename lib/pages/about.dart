@@ -169,12 +169,12 @@ class _AboutPageState extends State<AboutPage> {
               ),
               ListTile(
                 title: const Text('「图鉴日图」用户协议'),
-                onTap: () => SystemUtils.openUrl('https://www.dailypics.cn/doc/1'),
+                onTap: () => launch('https://www.dailypics.cn/doc/1'),
                 trailing: _buildTrailing(true),
               ),
               ListTile(
                 title: const Text('「图鉴日图」隐私政策'),
-                onTap: () => SystemUtils.openUrl('https://www.dailypics.cn/doc/2'),
+                onTap: () => launch('https://www.dailypics.cn/doc/2'),
                 trailing: _buildTrailing(true),
               )
             ],

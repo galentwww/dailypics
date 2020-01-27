@@ -21,7 +21,7 @@ import 'package:dailypics/misc/bean.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-// import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const MethodChannel _channel = MethodChannel('ml.cerasus.pics');
 
@@ -53,9 +53,8 @@ class SystemUtils {
     await _channel.invokeMethod('openAppSettings');
   }
 
-  static Future<void> openUrl(String url) async {
-    // return launch(url, forceSafariVC: false, forceWebView: false);
-    await _channel.invokeMethod('openUrl', url);
+  static Future<void> openUrl(String url) {
+    return launch(url, forceSafariVC: false, forceWebView: false);
   }
 
   static Future<String> getTemporaryDirectory() {
