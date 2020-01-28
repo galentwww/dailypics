@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// import 'dart:collection';
 import 'dart:collection';
 import 'dart:io';
 import 'dart:math' as math;
@@ -459,6 +460,7 @@ class _SaveButtonState extends State<_SaveButton> {
 
   @override
   Widget build(BuildContext context) {
+    bool supported = Platform.isAndroid/* || Platform.isMacOS*/;
     Color backgroundColor = const CupertinoDynamicColor.withBrightness(
       color: Color(0xFFF2F2F7),
       darkColor: Color(0xFF313135),
@@ -479,7 +481,7 @@ class _SaveButtonState extends State<_SaveButton> {
           } on PlatformException catch (e) {
             if (e.code == '-1') setState(() => denied = true);
           }
-        } else if (progress == 1 && Platform.isAndroid) {
+        } else if (progress == 1 && supported) {
           SystemUtils.useAsWallpaper(file);
         }
       },
@@ -492,7 +494,7 @@ class _SaveButtonState extends State<_SaveButton> {
             borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
-            denied ? '授权' : progress != 1 ? '获取' : Platform.isAndroid ? '设定' : '完成',
+            denied ? '授权' : progress != 1 ? '获取' : supported ? '设定' : '完成',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w500,

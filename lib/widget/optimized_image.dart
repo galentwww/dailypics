@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 
 class OptimizedImage extends StatelessWidget {
@@ -45,23 +44,31 @@ class OptimizedImage extends StatelessWidget {
     bool isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
     Widget result = ClipRRect(
       borderRadius: borderRadius,
-      child: CachedNetworkImage(
-        imageUrl: imageUrl,
-        width: width,
-        height: height,
-        fit: fit,
-        placeholderFadeInDuration: Duration.zero,
-        fadeInDuration: const Duration(milliseconds: 700),
-        fadeInCurve: Curves.easeIn,
-        fadeOutDuration: const Duration(milliseconds: 300),
-        fadeOutCurve: Curves.easeOut,
-        placeholder: (_, __) {
-          return Container(
+      child: Stack(
+        fit: StackFit.passthrough,
+        alignment: Alignment.center,
+        children: <Widget>[
+          Container(
             alignment: Alignment.center,
             color: isDark ? const Color(0xFF1F1F1F) : const Color(0xFFE0E0E0),
             child: Image.asset('res/placeholder${isDark ? '-night' : ''}.jpg'),
-          );
-        },
+          ),
+          Image.network(
+            imageUrl,
+            width: width,
+            height: height,
+            fit: fit,
+            frameBuilder: (_, Widget child, int frame, bool wasSynchronouslyLoaded) {
+              if (wasSynchronouslyLoaded) return child;
+              return AnimatedOpacity(
+                child: child,
+                curve: Curves.easeOut,
+                opacity: frame == null ? 0 : 1,
+                duration: const Duration(milliseconds: 300),
+              );
+            },
+          )
+        ],
       ),
     );
     if (heroTag != null) {

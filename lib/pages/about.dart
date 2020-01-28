@@ -21,7 +21,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart'
     show CircleAvatar, Colors, Divider, ListTile, Scaffold, Theme, ThemeData;
 import 'package:flutter_ionicons/flutter_ionicons.dart';
-import 'package:package_info/package_info.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AboutPage extends StatefulWidget {
@@ -38,15 +37,15 @@ class AboutPage extends StatefulWidget {
 class _AboutPageState extends State<AboutPage> {
   ScrollController controller = ScrollController();
 
-  PackageInfo packageInfo;
+  // PackageInfo packageInfo;
   List<Contributor> contributors;
 
   @override
   void initState() {
     super.initState();
-    PackageInfo.fromPlatform().then((info) {
+    /*PackageInfo.fromPlatform().then((info) {
       setState(() => packageInfo = info);
-    });
+    });*/
     DefaultAssetBundle.of(context).loadString('res/contributors.json').then(
       (String value) {
         setState(() {
@@ -119,7 +118,7 @@ class _AboutPageState extends State<AboutPage> {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
               child: GestureDetector(
-                onTap: member.url == null ? null : () => launch(member.url),
+                onTap: member.url == null ? null : () => SystemUtils.openUrl(member.url),
                 child: Column(
                   children: <Widget>[
                     Padding(
@@ -158,7 +157,7 @@ class _AboutPageState extends State<AboutPage> {
                 (index) {
                   Contributor member = contributors[index + 3];
                   return ListTile(
-                    onTap: member.url == null ? null : () => launch(member.url),
+                    onTap: member.url == null ? null : () => SystemUtils.openUrl(member.url),
                     title: Text(member.name),
                     subtitle: Text(member.position),
                     leading: CircleAvatar(
@@ -185,8 +184,8 @@ class _AboutPageState extends State<AboutPage> {
   }
 
   Widget _buildAppInfo() {
-    final String version = packageInfo?.version ?? '0.0.0';
-    final String buildNumber = packageInfo?.buildNumber ?? '190000';
+    const String version = /*packageInfo?.version ?? */'2.0.2';
+    const String buildNumber = /*packageInfo?.buildNumber ?? */'191221';
     Color textColor = CupertinoDynamicColor.withBrightness(
       color: Colors.black54,
       darkColor: Colors.white70,
@@ -223,14 +222,14 @@ class _AboutPageState extends State<AboutPage> {
                 _buildAction(
                   Ionicons.logo_github,
                   '开源',
-                  () => launch(
+                  () => SystemUtils.openUrl(
                     'https://github.com/KagurazakaHanabi/daily_pics',
                   ),
                 ),
                 _buildAction(
                   Ionicons.ios_link,
                   '官网',
-                  () => launch('https://www.dailypics.cn/'),
+                  () => SystemUtils.openUrl('https://www.dailypics.cn/'),
                 ),
                 _buildAction(
                   Ionicons.ios_star_half,

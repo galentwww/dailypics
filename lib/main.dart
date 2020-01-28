@@ -12,14 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'dart:io';
+
 import 'package:dailypics/model/app.dart';
 import 'package:dailypics/pages/splash.dart';
 import 'package:dailypics/widget/error.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:scoped_model/scoped_model.dart';
 
 void main() async {
+  if (Platform.isWindows || Platform.isLinux) {
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+  }
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return CustomErrorWidget(details);
   };
