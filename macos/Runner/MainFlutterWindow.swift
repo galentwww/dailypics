@@ -24,8 +24,6 @@ class MainFlutterWindow: NSWindow {
                 self.isAlbumAuthorized(result: result)
             case "openAppSettings":
                 self.openAppSettings(result: result)
-            case "getTemporaryDirectory":
-                self.getTemporaryDirectory(result: result)
             case "syncAlbum":
                 let arguments = call.arguments as! Dictionary<String, String>;
                 self.syncAlbum(file: arguments["file"]!, result: result)
@@ -64,11 +62,6 @@ class MainFlutterWindow: NSWindow {
 
     private func openAppSettings(result: FlutterResult) {
         result(FlutterMethodNotImplemented)
-    }
-
-    private func getTemporaryDirectory(result: FlutterResult) {
-        let fileManager = FileManager.default
-        result(fileManager.urls(for: .cachesDirectory, in: .userDomainMask)[0].path)
     }
 
     private func syncAlbum(file: String, result: FlutterResult) {

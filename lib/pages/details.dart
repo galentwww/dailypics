@@ -32,6 +32,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_ionicons/flutter_ionicons.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:path_provider/path_provider.dart';
 
 const double _kBackGestureWidth = 20.0;
 const double _kMinFlingVelocity = 1.0; // Screen widths per second.

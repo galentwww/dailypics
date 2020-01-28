@@ -53,7 +53,7 @@ class _SplashPageState extends State<SplashPage> {
     _timer = Timer(const Duration(seconds: 3), () => HomePage.push(context));
     List<dynamic> results = await Future.wait([
       TujianApi.getTypes(),
-      // Settings.initialize(),
+      Settings.initialize(),
       _fetchOrShowSplash(),
     ]);
     AppModel.of(context).types = results[0];
