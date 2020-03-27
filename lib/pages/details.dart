@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import 'dart:collection';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:dailypics/extension.dart';
 import 'package:dailypics/misc/bean.dart';
+import 'package:dailypics/model/app.dart';
 import 'package:dailypics/utils/api.dart';
 import 'package:dailypics/utils/utils.dart';
 import 'package:dailypics/widget/adaptive_scaffold.dart';
-import 'package:dailypics/widget/image_card.dart';
+import 'package:dailypics/widget/photo_card.dart';
 import 'package:dailypics/widget/optimized_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
@@ -104,7 +105,7 @@ class _DetailsPageState extends State<DetailsPage> {
     Radius radius = Radius.circular(SystemUtils.isIPad(context) ? 16 : 0);
     CupertinoThemeData theme = CupertinoTheme.of(context);
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: Utils.isDarkColor(data.color) && !SystemUtils.isIPad(context)
+      value: (data.color?.isDark ?? false) && !SystemUtils.isIPad(context)
           ? SystemUiOverlayStyle.light
           : SystemUiOverlayStyle.dark,
       child: AdaptiveScaffold(
@@ -114,7 +115,7 @@ class _DetailsPageState extends State<DetailsPage> {
             Container(
               alignment: Alignment.center,
               padding: const EdgeInsets.only(top: 64),
-              child: ImageCard(
+              child: PhotoCard(
                 data,
                 null,
                 showQrCode: true,
@@ -136,7 +137,7 @@ class _DetailsPageState extends State<DetailsPage> {
                   AspectRatio(
                     aspectRatio: data.width / data.height,
                     child: OptimizedImage(
-                      Utils.getCompressed(data),
+                      data.getCompressedUrl(),
                       borderRadius: BorderRadius.vertical(top: radius),
                       heroTag: widget.heroTag,
                     ),
@@ -176,7 +177,7 @@ class _DetailsPageState extends State<DetailsPage> {
           child: Text(
             data.title,
             style: const TextStyle(
-              fontSize: 22,
+              fontSize: 24,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -186,15 +187,15 @@ class _DetailsPageState extends State<DetailsPage> {
           child: Padding(
             padding: const EdgeInsets.only(left: 12),
             child: Icon(
-              data.marked ? Ionicons.ios_star : Ionicons.ios_star_outline,
+              data.marked ? Ionicons.ios_heart : Ionicons.ios_heart_empty,
               color: CupertinoColors.activeBlue,
-              size: 22,
+              size: 24,
             ),
           ),
         ),
         Padding(
           padding: const EdgeInsets.only(left: 16),
-          child: _SaveButton(data),
+          child: _DownloadButton(data),
         ),
       ],
     );
@@ -203,13 +204,20 @@ class _DetailsPageState extends State<DetailsPage> {
   Widget _buildContent() {
     CupertinoThemeData theme = CupertinoTheme.of(context);
     TextStyle textStyle = theme.textTheme.textStyle.copyWith(
-      fontSize: 15,
-      height: 1.2,
+      fontSize: 16,
     );
     return MarkdownBody(
       data: data.content,
       onTapLink: (String href) => SystemUtils.openUrl(href),
-      imageBuilder: (Uri uri) => OptimizedImage(uri.toString()),
+      imageBuilder: (uri, width, height) {
+        return SizedBox(
+          width: width,
+          height: height,
+          child: OptimizedImage(
+            uri.toString(),
+          ),
+        );
+      },
       styleSheet: MarkdownStyleSheet(
         a: const TextStyle(color: CupertinoColors.link),
         p: textStyle.copyWith(
@@ -254,24 +262,24 @@ class _DetailsPageState extends State<DetailsPage> {
         img: textStyle,
         blockSpacing: 8,
         listIndent: 24,
-        blockquotePadding: const EdgeInsets.all(16),
-        blockquoteDecoration: const BoxDecoration(
-          color: CupertinoColors.systemGrey6,
+        blockquotePadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        blockquoteDecoration: BoxDecoration(
+          color: CupertinoColors.systemGrey6.resolveFrom(context),
           border: Border(
             left: BorderSide(
-              color: CupertinoColors.systemGrey4,
+              color: CupertinoColors.systemGrey4.resolveFrom(context),
               width: 4,
             ),
           ),
         ),
         codeblockPadding: const EdgeInsets.all(8),
-        codeblockDecoration: const BoxDecoration(
-          color: CupertinoColors.systemGrey6,
+        codeblockDecoration: BoxDecoration(
+          color: CupertinoColors.systemGrey6.resolveFrom(context),
         ),
-        horizontalRuleDecoration: const BoxDecoration(
+        horizontalRuleDecoration: BoxDecoration(
           border: Border(
             top: BorderSide(
-              color: CupertinoColors.systemGrey5,
+              color: CupertinoColors.systemGrey5.resolveFrom(context),
               width: 1,
             ),
           ),
@@ -406,13 +414,14 @@ class _DetailsPageState extends State<DetailsPage> {
     } else {
       data.marked = !data.marked;
     }
-    HashSet<String> hashSet = HashSet.from(Settings.marked);
+    List<String> list = List.from(Settings.marked);
     if (data.marked) {
-      hashSet.add(data.id);
+      list.add(data.id);
     } else {
-      hashSet.remove(data.id);
+      list.remove(data.id);
     }
-    Settings.marked = hashSet.toList();
+    Settings.marked = list.toList();
+    AppModel.of(context).collections = [];
     setState(() {});
   }
 
@@ -434,27 +443,46 @@ class _DetailsPageState extends State<DetailsPage> {
   }
 }
 
-class _SaveButton extends StatefulWidget {
-  _SaveButton(this.data);
+enum _DownloadState { pending, running, failed, successful }
+
+class _DownloadButton extends StatefulWidget {
+  _DownloadButton(this.data);
 
   final Picture data;
 
   @override
-  _SaveButtonState createState() => _SaveButtonState();
+  _DownloadButtonState createState() => _DownloadButtonState();
 }
 
-class _SaveButtonState extends State<_SaveButton> {
-  bool started = false;
-  bool denied = false;
-  double progress;
+class _DownloadButtonState extends State<_DownloadButton> {
+  DownloadManager dm;
+  _DownloadState state;
+  ValueNotifier<double> progress;
   File file;
 
   @override
   void initState() {
     super.initState();
     SystemUtils.isAlbumAuthorized().then((granted) {
-      setState(() => denied = !granted);
+      if (!granted) {
+        setState(() => state = _DownloadState.failed);
+      }
     });
+
+    // Resume states.
+    dm = DownloadManager.instance;
+    List<DownloadTask> tasks = dm.queryTask(widget.data.url ?? widget.data.cdnUrl);
+    if (tasks.isNotEmpty) {
+      if (tasks[0].progress.value != null) {
+        state = _DownloadState.running;
+      } else {
+        state = _DownloadState.pending;
+      }
+      progress = tasks[0].progress;
+      progress.addListener(onProgressChanged);
+      file = tasks[0].destFile;
+      setState(() {});
+    }
   }
 
   @override
@@ -466,60 +494,78 @@ class _SaveButtonState extends State<_SaveButton> {
     Color primaryColor = CupertinoColors.activeBlue;
     return GestureDetector(
       onTap: () async {
-        if (denied) {
-          SystemUtils.openAppSettings();
-        } else if (!started) {
-          setState(() => started = true);
-          try {
-            file = await Utils.download(widget.data, (count, total) {
-              if (mounted) {
-                setState(() => progress = count / total);
+        if (state == null) {
+          setState(() => state = _DownloadState.pending);
+          ValueNotifier<double> notifier = ValueNotifier(null);
+          notifier.addListener(onProgressChanged);
+          DownloadTask task = await dm.runTask(widget.data, progress = notifier);
+          file = task.destFile;
+        } else {
+          switch (state) {
+            case _DownloadState.pending:
+            case _DownloadState.running:
+              dm.cancel(widget.data.url);
+              setState(() => state = null);
+              break;
+            case _DownloadState.failed:
+              SystemUtils.openAppSettings();
+              break;
+            case _DownloadState.successful:
+              if (Platform.isAndroid) {
+                SystemUtils.useAsWallpaper(file);
               }
-            });
-          } on PlatformException catch (e) {
-            if (e.code == '-1') setState(() => denied = true);
+              break;
           }
-        } else if (progress == 1 && Platform.isAndroid) {
-          SystemUtils.useAsWallpaper(file);
         }
       },
       child: AnimatedCrossFade(
         firstChild: Container(
           alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 20),
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 20),
           decoration: BoxDecoration(
-            color: denied ? CupertinoColors.destructiveRed : backgroundColor,
+            color: state == _DownloadState.failed ? CupertinoColors.systemRed : backgroundColor,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
-            denied ? '授权' : progress != 1 ? '获取' : Platform.isAndroid ? '设定' : '完成',
+            state == _DownloadState.failed
+                ? '授权'
+                : (state == null || state == _DownloadState.pending)
+                    ? '获取'
+                    : Platform.isAndroid ? '设定' : '完成',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w500,
-              color: denied ? backgroundColor : primaryColor,
+              color: state == _DownloadState.failed ? backgroundColor : primaryColor,
             ),
           ),
         ),
         secondChild: Container(
           width: 70,
-          height: 26,
+          height: 28,
           alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 26),
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 26),
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            value: progress,
+            value: progress?.value,
             backgroundColor: progress != null ? backgroundColor : null,
             valueColor: progress == null
                 ? AlwaysStoppedAnimation(backgroundColor)
                 : AlwaysStoppedAnimation(primaryColor),
           ),
         ),
-        crossFadeState: progress == null && !started || progress == 1
-            ? CrossFadeState.showFirst
-            : CrossFadeState.showSecond,
+        crossFadeState: state == _DownloadState.pending || state == _DownloadState.running
+            ? CrossFadeState.showSecond
+            : CrossFadeState.showFirst,
         duration: const Duration(milliseconds: 200),
       ),
     );
+  }
+
+  void onProgressChanged() {
+    if (progress.value == -1) {
+      state = _DownloadState.successful;
+    }
+    if (mounted) setState(() {});
   }
 }
 

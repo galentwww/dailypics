@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'package:dailypics/extension.dart';
 import 'package:dailypics/misc/bean.dart';
 import 'package:dailypics/pages/details.dart';
-import 'package:dailypics/utils/utils.dart';
 import 'package:dailypics/widget/animated_transform.dart';
 import 'package:dailypics/widget/optimized_image.dart';
 import 'package:dailypics/widget/qrcode.dart';
@@ -22,11 +22,21 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Colors;
 import 'package:markdown/markdown.dart' hide Text;
 
-class ImageCard extends StatefulWidget {
-  const ImageCard(
+class PhotoCard extends StatefulWidget {
+  const PhotoCard(
     this.data,
     this.heroTag, {
+    this.padding = const EdgeInsets.all(16),
     this.aspectRatio = 4 / 5,
+    this.boxShadow = const [
+      BoxShadow(
+        color: Colors.black26,
+        offset: Offset(0, 4),
+        spreadRadius: -24,
+        blurRadius: 32,
+      )
+    ],
+    this.showTexts = true,
     this.showQrCode = false,
     this.repaintKey,
   }) : assert(aspectRatio != null);
@@ -35,17 +45,23 @@ class ImageCard extends StatefulWidget {
 
   final String heroTag;
 
+  final EdgeInsets padding;
+
   final double aspectRatio;
 
+  final List<BoxShadow> boxShadow;
+
   final bool showQrCode;
+
+  final bool showTexts;
 
   final GlobalKey repaintKey;
 
   @override
-  State<StatefulWidget> createState() => _ImageCardState();
+  State<StatefulWidget> createState() => _PhotoCardState();
 }
 
-class _ImageCardState extends State<ImageCard> {
+class _PhotoCardState extends State<PhotoCard> {
   final Duration duration = const Duration(milliseconds: 150);
 
   double scale = 1;
@@ -53,9 +69,7 @@ class _ImageCardState extends State<ImageCard> {
 
   @override
   Widget build(BuildContext context) {
-    Color textColor = Utils.isDarkColor(widget.data.color)
-        ? CupertinoColors.white
-        : CupertinoColors.black;
+    Color textColor = widget.data.color?.isDark ?? false ? Colors.white : Colors.black;
     return AnimatedTransform.scale(
       scale: scale,
       duration: duration,
@@ -64,17 +78,10 @@ class _ImageCardState extends State<ImageCard> {
       child: AspectRatio(
         aspectRatio: widget.aspectRatio ?? 4 / 5,
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: widget.padding,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black26,
-                offset: Offset(0, 4),
-                spreadRadius: -24,
-                blurRadius: 32,
-              )
-            ],
+            boxShadow: widget.boxShadow,
           ),
           child: GestureDetector(
             onTapDown: (_) {
@@ -100,40 +107,41 @@ class _ImageCardState extends State<ImageCard> {
                   AspectRatio(
                     aspectRatio: widget.aspectRatio,
                     child: OptimizedImage(
-                      Utils.getCompressed(widget.data),
+                      widget.data.getCompressedUrl(),
                       heroTag: widget.heroTag,
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 32, 24, 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          widget.data.title,
-                          style: TextStyle(
-                            color: textColor,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 28,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            markdownToHtml(widget.data.content.split('\n')[0])
-                                .replaceAll(RegExp(r'<[^>]+>'), ''),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                  if (widget.showTexts)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 32, 24, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            widget.data.title,
                             style: TextStyle(
-                              color: textColor.withAlpha(0xB3),
-                              fontSize: 13,
+                              color: textColor,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 28,
                             ),
                           ),
-                        ),
-                      ],
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              markdownToHtml(widget.data.content.split('\n')[0])
+                                  .replaceAll(RegExp(r'<[^>]+>'), ''),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: textColor.withAlpha(0xB3),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
                   if (widget.showQrCode)
                     AspectRatio(
                       aspectRatio: widget.aspectRatio,
@@ -141,7 +149,7 @@ class _ImageCardState extends State<ImageCard> {
                         alignment: Alignment.bottomRight,
                         padding: const EdgeInsets.only(right: 8, bottom: 8),
                         child: QrCodeView(
-                          widget.data.url.contains('bing.com/')
+                          widget.data.url?.contains('bing.com/') ?? false
                               ? 'https://cn.bing.com/'
                               : 'https://dailypics.cn/p/${widget.data.id}',
                         ),

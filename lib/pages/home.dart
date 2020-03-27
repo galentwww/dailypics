@@ -14,13 +14,12 @@
 
 import 'dart:async';
 
+import 'package:dailypics/extension.dart';
 import 'package:dailypics/components/suggest.dart';
 import 'package:dailypics/components/today.dart';
-import 'package:dailypics/model/app.dart';
 import 'package:dailypics/pages/about.dart';
 import 'package:dailypics/pages/details.dart';
 import 'package:dailypics/pages/recent.dart';
-import 'package:dailypics/utils/utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_ionicons/flutter_ionicons.dart';
@@ -55,7 +54,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: Utils.isDarkColor(CupertinoTheme.of(context).barBackgroundColor)
+      value: CupertinoTheme.of(context).barBackgroundColor.isDark
           ? SystemUiOverlayStyle.light
           : SystemUiOverlayStyle.dark,
       child: CupertinoTabScaffold(
@@ -73,9 +72,7 @@ class _HomePageState extends State<HomePage> {
             case 0:
               return CupertinoTabView(builder: (_) => TodayComponent());
             case 1:
-              return CupertinoTabView(
-                builder: (_) => RecentPage(types: AppModel.of(context).types),
-              );
+              return CupertinoTabView(builder: (_) => RecentPage());
             case 2:
               return CupertinoTabView(builder: (_) => SuggestComponent());
             case 3:
@@ -100,7 +97,7 @@ class _HomePageState extends State<HomePage> {
 
   void _handleUniLink(Uri uri) {
     if (uri == null) return;
-    if ((uri.scheme == 'tujian' && uri.host == 'p') ||
+    if ((uri.scheme == 'dailypics' && uri.host == 'p') ||
         ((uri.scheme == 'https' && uri.host.contains('dailypics.cn')) &&
             (uri.path.startsWith('/p/') || uri.path.startsWith('/member/id/')))) {
       DetailsPage.push(context, pid: uri.pathSegments.last);

@@ -16,7 +16,11 @@ import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dailypics/misc/bean.dart';
+import 'package:dailypics/model/app.dart';
+import 'package:dailypics/pages/upload.dart';
+import 'package:dailypics/utils/api.dart';
 import 'package:dailypics/utils/utils.dart';
+import 'package:dailypics/widget/photo_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart'
     show CircleAvatar, Colors, Divider, ListTile, Scaffold, Theme, ThemeData;
@@ -78,19 +82,13 @@ class _AboutPageState extends State<AboutPage> {
                   child: _buildList(),
                 ),
               ),
-              const CupertinoNavigationBar(
-                /*padding: EdgeInsetsDirectional.zero,
-                leading: CupertinoButton(
-                  child: Icon(CupertinoIcons.back),
+              CupertinoNavigationBar(
+                middle: const Text('更多'),
+                trailing: CupertinoButton(
                   padding: EdgeInsets.zero,
-                  onPressed: () => Navigator.of(context).pop(),
-                ),*/
-                middle: Text('关于'),
-                /*trailing: CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  child: Text('测试入口'),
-                  onPressed: () => UserSpacePage.push(context),
-                ),*/
+                  child: const Text('投稿'),
+                  onPressed: () => UploadPage.push(context),
+                ),
               )
             ],
           ),
@@ -104,6 +102,7 @@ class _AboutPageState extends State<AboutPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         _buildAppInfo(),
+        _buildCollection(),
         const Divider(),
         const Padding(
           padding: EdgeInsets.only(left: 16, top: 8, bottom: 8),
@@ -224,7 +223,7 @@ class _AboutPageState extends State<AboutPage> {
                   Ionicons.logo_github,
                   '开源',
                   () => launch(
-                    'https://github.com/KagurazakaHanabi/daily_pics',
+                    'https://github.com/KagurazakaHanabi/dailypics',
                   ),
                 ),
                 _buildAction(
@@ -237,11 +236,81 @@ class _AboutPageState extends State<AboutPage> {
                   '评分',
                   () => SystemUtils.requestReview(false),
                 ),
+                _buildAction(
+                  Ionicons.ios_chatboxes,
+                  '反馈',
+                  () => launch('https://support.qq.com/product/120654'),
+                ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCollection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        const Divider(),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Text(
+            '我的收藏',
+            style: TextStyle(fontSize: 22),
+          ),
+        ),
+        SizedBox(
+          height: Settings.marked.isEmpty ? 64 : 256,
+          child: FutureBuilder(
+            future: _fetchData(),
+            builder: (BuildContext context, AsyncSnapshot<List<Picture>> snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CupertinoActivityIndicator(),
+                );
+              } else if (snapshot.data.isEmpty) {
+                return const Center(
+                  child: Text(
+                    '无数据',
+                    style: TextStyle(color: Colors.black54),
+                  ),
+                );
+              } else {
+                final data = snapshot.data;
+                return ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: data.length,
+                  itemBuilder: (_, i) {
+                    return PhotoCard(
+                      data[i],
+                      'C-$i-${data[i].id}',
+                      padding: const EdgeInsets.all(12),
+                      showTexts: false,
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x1F000000),
+                          offset: Offset(0, 3),
+                          spreadRadius: -16,
+                          blurRadius: 8,
+                        ),
+                        BoxShadow(
+                          color: Color(0x0A000000),
+                          offset: Offset(0, 3),
+                          spreadRadius: -16,
+                          blurRadius: 1,
+                        ),
+                      ],
+                    );
+                  },
+                );
+              }
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -275,5 +344,24 @@ class _AboutPageState extends State<AboutPage> {
         const Icon(CupertinoIcons.right_chevron),
       ],
     );
+  }
+
+  Future<List<Picture>> _fetchData() async {
+    List<Picture> result = [];
+    List<String> ids = Settings.marked.reversed.toList();
+    if (ids.isEmpty) {
+      return result;
+    }
+
+    List<Picture> saved = AppModel.of(context).collections;
+    if (saved.isNotEmpty) {
+      return saved;
+    }
+
+    for (int i = 0; i < ids.length; i++) {
+      result.add((await TujianApi.getDetails(ids[i]))..marked = true);
+    }
+    AppModel.of(context).collections = result;
+    return result;
   }
 }

@@ -13,14 +13,14 @@
 // limitations under the License.
 
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
+import 'package:dailypics/extension.dart';
 import 'package:dailypics/misc/bean.dart';
+import 'package:dailypics/utils/http.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -55,6 +55,22 @@ class SystemUtils {
     await _channel.invokeMethod('openAppSettings');
   }
 
+  static Future<void> makeH2Wallpaper(
+    Size size,
+    Offset offset,
+    Color shadowColor,
+    double shadowRadius,
+  ) async {
+    await _channel.invokeMethod('makeH2Wallpaper', {
+      'width': size.width,
+      'height': size.height,
+      'offsetX': offset.dx,
+      'offsetY': offset.dy,
+      'shadowColor': shadowColor.hexString,
+      'shadowRadius': shadowRadius,
+    });
+  }
+
   static Future<void> openUrl(String url) {
     return launch(url, forceSafariVC: false, forceWebView: false);
   }
@@ -73,112 +89,6 @@ class SystemUtils {
   }
 }
 
-class Utils {
-  static Future<File> download(
-    Picture data, [
-    void Function(int count, int total) cb,
-  ]) async {
-    Completer<File> completer = Completer();
-    String url = data.url;
-    String dest = (await getTemporaryDirectory()).path;
-    File file;
-    String name;
-    if (url.contains('bing.com/')) {
-      name = url.substring(url.lastIndexOf('=') + 1);
-    } else {
-      name = url.substring(url.lastIndexOf('/') + 1) + '.jpg';
-      url += '?p=0&f=jpg';
-    }
-    file = File('$dest/$name');
-    if (file.existsSync()) {
-      file.deleteSync();
-    }
-    HttpClient client = HttpClient();
-    HttpClientRequest request = await client.getUrl(Uri.parse(url));
-    HttpClientResponse response = await request.close();
-    int count = 0;
-    response.listen((data) {
-      file.writeAsBytesSync(data, mode: FileMode.writeOnlyAppend);
-      if (cb != null) {
-        cb(count += data.length, response.contentLength);
-      }
-    }, onDone: () async {
-      await _channel.invokeMethod('syncAlbum', {
-        'file': file.path,
-        'title': data.title,
-        'content': data.content,
-      });
-      completer.complete(file);
-    });
-    return completer.future;
-  }
-
-  static Future<String> upload(
-    File file,
-    Map<String, String> data,
-    void Function(int count, int total) cb,
-  ) async {
-    dynamic json = jsonDecode(
-      await uploadFile('https://img.dpic.dev/upload', file, cb),
-    );
-    if (!json['ret']) {
-      return jsonEncode({
-        'code': 400,
-        'msg': json['error']['message'],
-      });
-    }
-    String url = 'https://img.dpic.dev/' + json['info']['md5'];
-    data['url'] = url;
-    return (await http.post('https://v2.api.dailypics.cn/tg', body: data)).body;
-  }
-
-  static Future<String> uploadFile(
-    String url,
-    File file,
-    void Function(int, int) cb,
-  ) async {
-    HttpClient client = HttpClient();
-    HttpClientRequest request = await client.postUrl(Uri.parse(url));
-    String subType = file.path.substring(file.path.lastIndexOf('.') + 1);
-    request.headers.set('content-type', 'image/$subType');
-    int contentLength = file.statSync().size;
-    int byteCount = 0;
-    Stream<Uint8List> stream = file.openRead();
-    await request.addStream(stream.transform(StreamTransformer.fromHandlers(
-      handleData: (data, sink) {
-        byteCount += data.length;
-        sink.add(data);
-        if (cb != null) {
-          cb(byteCount, contentLength);
-        }
-      },
-      handleError: (_, __, ___) {},
-      handleDone: (sink) => sink.close(),
-    )));
-    HttpClientResponse response = await request.close();
-    return await response.cast<List<int>>().transform(utf8.decoder).join();
-  }
-
-  static String getCompressed(Picture data, [String style = 'w720']) {
-    if (data.url.contains('bing')) return data.url;
-    return 'https://s1.images.dailypics.cn${data.path}!$style';
-  }
-
-  static bool isDarkColor(Color c) {
-    if (c == null) return false;
-    // See https://github.com/FooStudio/tinycolor
-    return (c.red * 299 + c.green * 587 + c.blue * 114) / 1000 < 128;
-  }
-
-  static bool isUuid(String input) {
-    RegExp regExp = RegExp(
-      r'^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$',
-      caseSensitive: false,
-    );
-    return regExp.hasMatch(input);
-  }
-}
-
 class Settings {
   static SharedPreferences _prefs;
 
@@ -189,4 +99,80 @@ class Settings {
   static List<String> get marked => _prefs.getStringList('marked') ?? [];
 
   static set marked(List<String> list) => _prefs.setStringList('marked', list);
+}
+
+class DownloadManager {
+  static DownloadManager _instance;
+
+  static DownloadManager get instance {
+    if (_instance == null) {
+      _instance = DownloadManager();
+    }
+    return _instance;
+  }
+
+  List<DownloadTask> _tasks = [];
+
+  Future<DownloadTask> runTask(Picture data, ValueNotifier<double> onProgress) async {
+    String url = data.url ?? data.cdnUrl;
+    String dest = (await getTemporaryDirectory()).path;
+    File file;
+    String name;
+    if (url.contains('bing.com/')) {
+      name = url.substring(url.lastIndexOf('=') + 1);
+    } else {
+      name = url.substring(url.lastIndexOf('/') + 1);
+    }
+    file = File('$dest/$name');
+    if (file.existsSync()) {
+      file.deleteSync();
+    }
+
+    CancelToken token = CancelToken();
+    DownloadTask task = DownloadTask(
+      url: url,
+      destFile: file,
+      progress: onProgress,
+      cancelToken: token,
+    );
+    _tasks.add(task);
+    http.downloadUri(
+      Uri.parse(url),
+      file.path,
+      cancelToken: token,
+      onReceiveProgress: (int count, int total) {
+        // DownloadTask task = tasks.singleWhere((e) => e.url == url);
+        task.progress.value = count / total;
+      },
+    ).then((value) async {
+      await _channel.invokeMethod('syncAlbum', {
+        'file': file.path,
+        'title': data.title,
+        'content': data.content,
+      });
+      task.progress.value = -1;
+      _tasks.remove(task);
+    }, onError: (err) => _tasks.remove(task));
+    return task;
+  }
+
+  List<DownloadTask> queryTask(String url) {
+    return _tasks.where((e) => e.url == url).toList();
+  }
+
+  void cancel(String url) {
+    Iterable<DownloadTask> tasks = _tasks.where((e) => e.url == url);
+    for (DownloadTask task in tasks) {
+      task.cancelToken.cancel("Abort by user!");
+    }
+  }
+}
+
+class DownloadTask {
+  DownloadTask({this.url, this.destFile, this.progress, this.cancelToken});
+
+  String url;
+  File destFile;
+  ValueNotifier<double> progress;
+  CancelToken cancelToken;
 }
